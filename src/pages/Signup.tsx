@@ -1,184 +1,231 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Check, ArrowRight, ArrowLeft, Building2, User, Mail, Phone, Lock, FileText, Globe, MapPin, CheckCircle2, PartyPopper } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { Mail, Phone, Lock, Eye, EyeOff, ArrowRight, ShieldAlert } from 'lucide-react';
 import AuthShell from '../components/auth/AuthShell';
+import { useMerchant } from '../context/MerchantContext';
 
-const steps = ['Business', 'Owner', 'Security', 'Address', 'Review'];
-
-const businessTypes = ['Private Limited', 'Partnership', 'LLP', 'Sole Proprietor', 'Public Limited', 'NGO'];
+type SignupFormData = {
+  email: string;
+  phone: string;
+  password: string;
+};
 
 export default function Signup() {
-  const [step, setStep] = useState(0);
-  const [done, setDone] = useState(false);
-  const [form, setForm] = useState({
-    businessName: '', ownerName: '', businessEmail: '', mobile: '', password: '', confirm: '',
-    businessType: 'Private Limited', gst: '', pan: '', country: 'India', state: '', city: '', address: '', website: '',
-    terms: false,
+  const navigate = useNavigate();
+  const {  loading, error, clearError } = useMerchant();
+  const [showPassword, setShowPassword] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignupFormData>({
+    defaultValues: {
+      email: '',
+      phone: '',
+      password: '',
+    },
   });
-
-  const set = (k: string, v: string | boolean) => setForm((f) => ({ ...f, [k]: v }));
-  const next = () => setStep((s) => Math.min(s + 1, steps.length - 1));
-  const back = () => setStep((s) => Math.max(s - 1, 0));
-  const submit = (e: React.FormEvent) => { e.preventDefault(); setDone(true); };
-
-  if (done) {
-    return (
-      <AuthShell title="Account Created" subtitle="Welcome to PayFlow.">
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center">
-          <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-emerald-500/10 text-emerald-500">
-            <PartyPopper className="h-10 w-10" />
-          </div>
-          <h3 className="mt-5 font-display text-xl font-bold text-ink-900 dark:text-white">You're all set, {form.ownerName || 'there'}!</h3>
-          <p className="mt-2 text-sm text-ink-500 dark:text-ink-400">
-            Your merchant account for <span className="font-semibold text-ink-800 dark:text-ink-100">{form.businessName || 'your business'}</span> has been created.
-            Check <span className="font-semibold">{form.businessEmail || 'your email'}</span> to verify and continue onboarding.
-          </p>
-          <div className="mt-6 space-y-2 text-left">
-            {['Verify your email', 'Upload KYC documents', 'Complete bank verification', 'Activate your account'].map((s, i) => (
-              <div key={s} className="flex items-center gap-3 rounded-xl bg-ink-50 dark:bg-ink-900/60 px-4 py-3 text-sm">
-                <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-500/10 font-display text-xs font-bold text-brand-600 dark:text-brand-300">{i + 1}</span>
-                {s}
-              </div>
-            ))}
-          </div>
-          <div className="mt-6 flex gap-3">
-            <Link to="/onboarding" className="btn-primary flex-1">Continue onboarding <ArrowRight className="h-4 w-4" /></Link>
-            <Link to="/login" className="btn-outline flex-1">Go to login</Link>
-          </div>
-        </motion.div>
-      </AuthShell>
-    );
-  }
+  const onSubmit = async (data: SignupFormData) => {
+    clearError();
+  
+    try {
+      const response = await fetch("http://localhost:3000/gateway/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          merchantName: data.email.split("@")[0], // Temporary merchant name
+          email: data.email,
+          password: data.password,
+        }),
+      });
+  
+      const result = await response.json();
+  
+      if (!response.ok) {
+        throw new Error(result.message || "Signup failed");
+      }
+  
+      console.log(result);
+  
+      // Save email for verification page
+      localStorage.setItem("merchantEmail", data.email);
+  
+      // Send OTP automatically
+      await fetch("http://localhost:3000/send-otp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: data.email,
+        }),
+      });
+  
+      navigate("/verify-email");
+  
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message);
+    }
+  };
 
   return (
     <AuthShell
       title="Create Merchant Account"
-      subtitle="Get started with PayFlow in minutes. No setup fees."
-      footer={<>Already have an account? <Link to="/login" className="font-semibold text-brand-600 dark:text-brand-300">Login</Link></>}
+      subtitle="Start accepting cards, UPI, and net banking in minutes."
+      footer={
+        <>
+          Already have an account?{' '}
+          <Link to="/login" className="font-semibold text-brand-600 dark:text-brand-300 hover:underline">
+            Login
+          </Link>
+        </>
+      }
     >
-      <div className="mb-6 flex items-center justify-between">
-        {steps.map((s, i) => (
-          <div key={s} className="flex flex-1 items-center">
-            <div className="flex flex-col items-center gap-1.5">
-              <span className={`grid h-8 w-8 place-items-center rounded-full text-xs font-bold transition ${
-                i < step ? 'bg-emerald-500 text-white' : i === step ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800 text-ink-400'
-              }`}>
-                {i < step ? <Check className="h-4 w-4" /> : i + 1}
-              </span>
-              <span className={`text-[10px] font-medium ${i === step ? 'text-ink-900 dark:text-white' : 'text-ink-400'}`}>{s}</span>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        {error && (
+          <div className="flex items-start gap-3 rounded-2xl bg-rose-500/10 p-4 text-sm text-rose-600 dark:text-rose-400 border border-rose-500/20">
+            <ShieldAlert className="h-5 w-5 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold">Signup Failed</p>
+              <p className="mt-0.5 text-xs text-rose-500">{error}</p>
             </div>
-            {i < steps.length - 1 && <div className={`mx-1 h-0.5 flex-1 rounded ${i < step ? 'bg-emerald-500' : 'bg-ink-200 dark:bg-ink-800'}`} />}
           </div>
-        ))}
-      </div>
+        )}
 
-      <form onSubmit={submit} className="space-y-4">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={step}
-            initial={{ opacity: 0, x: 24 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -24 }}
-            transition={{ duration: 0.25 }}
-            className="space-y-4"
-          >
-            {step === 0 && (
-              <>
-                <Field icon={Building2} label="Business Name" value={form.businessName} onChange={(v) => set('businessName', v)} placeholder="Acme Pvt Ltd" />
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="label">Business Type</label>
-                    <select className="input" value={form.businessType} onChange={(e) => set('businessType', e.target.value)}>
-                      {businessTypes.map((b) => <option key={b}>{b}</option>)}
-                    </select>
-                  </div>
-                  <Field icon={FileText} label="GST Number" value={form.gst} onChange={(v) => set('gst', v)} placeholder="29ABCDE1234F1Z5" />
-                </div>
-                <Field icon={FileText} label="PAN Number" value={form.pan} onChange={(v) => set('pan', v)} placeholder="ABCDE1234F" />
-              </>
-            )}
-            {step === 1 && (
-              <>
-                <Field icon={User} label="Owner Name" value={form.ownerName} onChange={(v) => set('ownerName', v)} placeholder="Aarav Mehta" />
-                <Field icon={Mail} label="Business Email" type="email" value={form.businessEmail} onChange={(v) => set('businessEmail', v)} placeholder="you@business.com" />
-                <Field icon={Phone} label="Mobile Number" value={form.mobile} onChange={(v) => set('mobile', v)} placeholder="+91 90000 00000" />
-              </>
-            )}
-            {step === 2 && (
-              <>
-                <Field icon={Lock} label="Password" type="password" value={form.password} onChange={(v) => set('password', v)} placeholder="••••••••" />
-                <Field icon={Lock} label="Confirm Password" type="password" value={form.confirm} onChange={(v) => set('confirm', v)} placeholder="••••••••" />
-                <div className="rounded-xl bg-ink-50 dark:bg-ink-900/60 p-3 text-xs text-ink-500 dark:text-ink-400">
-                  Use at least 8 characters with a mix of letters, numbers and symbols.
-                </div>
-              </>
-            )}
-            {step === 3 && (
-              <>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field icon={Globe} label="Country" value={form.country} onChange={(v) => set('country', v)} placeholder="India" />
-                  <Field icon={MapPin} label="State" value={form.state} onChange={(v) => set('state', v)} placeholder="Karnataka" />
-                </div>
-                <Field icon={MapPin} label="City" value={form.city} onChange={(v) => set('city', v)} placeholder="Bengaluru" />
-                <Field icon={MapPin} label="Address" value={form.address} onChange={(v) => set('address', v)} placeholder="Prestige Tech Park, Marathahalli" />
-                <Field icon={Globe} label="Website" value={form.website} onChange={(v) => set('website', v)} placeholder="https://yourbusiness.com" />
-              </>
-            )}
-            {step === 4 && (
-              <div className="space-y-3">
-                <div className="rounded-xl bg-ink-50 dark:bg-ink-900/60 p-4 text-sm">
-                  {[
-                    ['Business', form.businessName], ['Type', form.businessType], ['GST', form.gst || '—'],
-                    ['Owner', form.ownerName], ['Email', form.businessEmail], ['Mobile', form.mobile || '—'],
-                    ['Country', form.country], ['State', form.state || '—'], ['City', form.city || '—'],
-                  ].map(([k, v]) => (
-                    <div key={k} className="flex justify-between border-b border-ink-200/60 dark:border-ink-800/60 py-1.5 last:border-0">
-                      <span className="text-ink-500 dark:text-ink-400">{k}</span>
-                      <span className="font-medium text-ink-900 dark:text-white">{v || '—'}</span>
-                    </div>
-                  ))}
-                </div>
-                <label className="flex items-start gap-2.5 text-sm text-ink-600 dark:text-ink-300">
-                  <input type="checkbox" required checked={form.terms} onChange={(e) => set('terms', e.target.checked)} className="mt-0.5 h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-400" />
-                  <span>I accept the <Link to="/terms" className="font-semibold text-brand-600 dark:text-brand-300">Terms of Service</Link> and <Link to="/privacy-policy" className="font-semibold text-brand-600 dark:text-brand-300">Privacy Policy</Link>.</span>
-                </label>
-              </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
-
-        <div className="flex gap-3 pt-2">
-          {step > 0 && (
-            <button type="button" onClick={back} className="btn-outline">
-              <ArrowLeft className="h-4 w-4" /> Back
-            </button>
-          )}
-          {step < steps.length - 1 ? (
-            <button type="button" onClick={next} className="btn-primary flex-1">
-              Continue <ArrowRight className="h-4 w-4" />
-            </button>
-          ) : (
-            <button type="submit" className="btn-primary flex-1">
-              <CheckCircle2 className="h-4 w-4" /> Create Account
-            </button>
+        {/* Email Address */}
+        <div>
+          <label className="label" htmlFor="email">
+            Business Email
+          </label>
+          <div className="relative group">
+            <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-ink-400 group-focus-within:text-brand-500 transition-colors" />
+            <input
+              id="email"
+              type="email"
+              placeholder="you@business.com"
+              className={`input pl-11 py-3.5 text-sm ${
+                errors.email ? 'border-rose-500 focus:ring-rose-500/20 focus:border-rose-500' : ''
+              }`}
+              {...register('email', {
+                required: 'Business email is required',
+                pattern: {
+                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  message: 'Please enter a valid business email address',
+                },
+              })}
+            />
+          </div>
+          {errors.email && (
+            <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+              {errors.email.message}
+            </p>
           )}
         </div>
+
+        {/* Phone Number */}
+        <div>
+          <label className="label" htmlFor="phone">
+            Phone Number
+          </label>
+          <div className="relative group">
+            <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-ink-400 group-focus-within:text-brand-500 transition-colors" />
+            <input
+              id="phone"
+              type="tel"
+              placeholder="9876543210"
+              className={`input pl-11 py-3.5 text-sm ${
+                errors.phone ? 'border-rose-500 focus:ring-rose-500/20 focus:border-rose-500' : ''
+              }`}
+              {...register('phone', {
+                required: 'Phone number is required',
+                pattern: {
+                  value: /^[0-9]{10}$/,
+                  message: 'Phone number must be exactly 10 digits',
+                },
+              })}
+            />
+          </div>
+          {errors.phone && (
+            <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+              {errors.phone.message}
+            </p>
+          )}
+        </div>
+
+        {/* Password */}
+        <div>
+          <label className="label" htmlFor="password">
+            Password
+          </label>
+          <div className="relative group">
+            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-ink-400 group-focus-within:text-brand-500 transition-colors" />
+            <input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="••••••••"
+              className={`input pl-11 pr-11 py-3.5 text-sm ${
+                errors.password ? 'border-rose-500 focus:ring-rose-500/20 focus:border-rose-500' : ''
+              }`}
+              {...register('password', {
+                required: 'Password is required',
+                minLength: {
+                  value: 8,
+                  message: 'Password must be at least 8 characters long',
+                },
+                pattern: {
+                  value: /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/,
+                  message: 'Must include a letter, a number, and a special character (@$!%*#?&)',
+                },
+              })}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((s) => !s)}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-400 hover:text-ink-600 dark:hover:text-ink-200 transition-colors"
+            >
+              {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+            </button>
+          </div>
+          {errors.password ? (
+            <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+              {errors.password.message}
+            </p>
+          ) : (
+            <p className="mt-1.5 text-[11px] text-ink-400 dark:text-ink-500 pl-1">
+              Minimum 8 characters with a mix of letters, numbers, and symbols.
+            </p>
+          )}
+        </div>
+
+        {/* Submit Button */}
+        <button
+          type="submit"
+          disabled={loading}
+          className="btn-primary w-full mt-6 justify-center flex items-center gap-2 py-3.5 shadow-lg shadow-brand-500/20 hover:shadow-brand-500/30 transition-all duration-300 font-semibold"
+        >
+          {loading ? (
+            <span className="flex items-center gap-2">
+              <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Creating Merchant...
+            </span>
+          ) : (
+            <>
+              Create Account <ArrowRight className="h-4 w-4" />
+            </>
+          )}
+        </button>
       </form>
     </AuthShell>
-  );
-}
-
-function Field({ icon: Icon, label, value, onChange, placeholder, type = 'text' }: {
-  icon: React.ComponentType<{ className?: string }>; label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string;
-}) {
-  return (
-    <div>
-      <label className="label">{label}</label>
-      <div className="relative">
-        <Icon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
-        <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="input pl-10" />
-      </div>
-    </div>
   );
 }

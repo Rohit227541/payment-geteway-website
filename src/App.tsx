@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
+import { MerchantProvider } from './context/MerchantContext';
 import RootLayout from './layouts/RootLayout';
 import AuthLayout from './layouts/AuthLayout';
 import Home from './pages/Home';
@@ -16,9 +17,10 @@ import Resources from './pages/Resources';
 import SecurityPage from './pages/SecurityPage';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Onboarding from './pages/Onboarding';
-import Dashboard from './pages/Dashboard';
 import NotFound from './pages/NotFound';
 import LegalPage from './pages/LegalPage';
 
@@ -60,36 +62,39 @@ const cookieSections = [
 export default function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<RootLayout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/pricing" element={<PricingPage />} />
-            <Route path="/developers" element={<Developers />} />
-            <Route path="/products" element={<ProductsPage />} />
-            <Route path="/solutions" element={<SolutionsPage />} />
-            <Route path="/partners" element={<Partners />} />
-            <Route path="/careers" element={<Careers />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/resources" element={<Resources />} />
-            <Route path="/security" element={<SecurityPage />} />
-            <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/terms" element={<LegalPage title="Terms of Service" eyebrow="Legal" updated="July 7, 2025" sections={termsSections} />} />
-            <Route path="/privacy-policy" element={<LegalPage title="Privacy Policy" eyebrow="Legal" updated="July 7, 2025" sections={privacySections} />} />
-            <Route path="/refund-policy" element={<LegalPage title="Refund Policy" eyebrow="Legal" updated="July 7, 2025" sections={refundSections} />} />
-            <Route path="/cookie-policy" element={<LegalPage title="Cookie Policy" eyebrow="Legal" updated="July 7, 2025" sections={cookieSections} />} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
-          <Route element={<AuthLayout />}>
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <MerchantProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<RootLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/developers" element={<Developers />} />
+              <Route path="/products" element={<ProductsPage />} />
+              <Route path="/solutions" element={<SolutionsPage />} />
+              <Route path="/partners" element={<Partners />} />
+              <Route path="/careers" element={<Careers />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/resources" element={<Resources />} />
+              <Route path="/security" element={<SecurityPage />} />
+              <Route path="/onboarding" element={<Onboarding />} />
+              <Route path="/terms" element={<LegalPage title="Terms of Service" eyebrow="Legal" updated="July 7, 2025" sections={termsSections} />} />
+              <Route path="/privacy-policy" element={<LegalPage title="Privacy Policy" eyebrow="Legal" updated="July 7, 2025" sections={privacySections} />} />
+              <Route path="/refund-policy" element={<LegalPage title="Refund Policy" eyebrow="Legal" updated="July 7, 2025" sections={refundSections} />} />
+              <Route path="/cookie-policy" element={<LegalPage title="Cookie Policy" eyebrow="Legal" updated="July 7, 2025" sections={cookieSections} />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+            <Route element={<AuthLayout />}>
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </MerchantProvider>
     </ThemeProvider>
   );
 }
